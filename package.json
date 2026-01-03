@@ -1,0 +1,21 @@
+{
+  "name": "ai_hackathon",
+  "version": "1.0.0",
+  "description": "ai hackethon",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1",
+    "formdata-node": "^6.0.3",
+    "node-fetch": "^2.7.0",
+    "openai": "^6.9.1",
+    "pdf": "^0.1.0",
+    "pdf-parse-fixed": "^1.1.1",
+    "pdf2json": "^4.0.0",
+    "xlsx": "^0.18.5"
+  }
+}
