@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI File Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            background: #e0e0e0;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            margin-top: 20px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .result-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .file-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .file-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .file-item.selected {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-icon {
+            font-size: 24px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .file-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .ai-response {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .ai-response h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .ai-response-content {
+            line-height: 1.8;
+            color: #333;
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fff5f5;
+            border: 1px solid #fc8181;
+            color: #c53030;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .success {
+            background: #f0fff4;
+            border: 1px solid #68d391;
+            color: #276749;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .selected-files {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .selected-file-tag {
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .selected-file-tag button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .model-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e0e0e0;
+        }
+      
+        /* Table styles */
+        .ai-response-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 14px;
+            overflow-x: auto;
+            display: block;
+        }
+
+        .ai-response-content th,
+        .ai-response-content td {
+            border: 1px solid #e0e0e0;
+            padding: 10px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .ai-response-content th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .ai-response-content tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .ai-response-content tr:hover {
+            background: #f0f3ff;
+        }
+
+        .ai-response-content td:first-child {
+            font-weight: 600;
+            background: #f8f9fa;
+            min-width: 150px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 16px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Code block styles */
+        .ai-response-content pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .ai-response-content code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+
+        .ai-response-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* List styles */
+        .ai-response-content ul,
+        .ai-response-content ol {
+            margin: 12px 0 12px 24px;
+        }
+
+        .ai-response-content li {
+            margin: 6px 0;
+        }
+
+        /* Heading styles in response */
+        .ai-response-content h1,
+        .ai-response-content h2,
+        .ai-response-content h3 {
+            margin: 20px 0 12px 0;
+            color: #333;
+        }
+
+        .ai-response-content h1 {
+            font-size: 1.5rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .ai-response-content h2 {
+            font-size: 1.3rem;
+        }
+
+        .ai-response-content h3 {
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+       <h1>🤖 Ask Ark</h1>
+
+        <div class="card">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('search')">Search Files</button>
+                <button class="tab" onclick="switchTab('analyze')">Analyze Files</button>
+            </div>
+
+            <!-- Search Files Tab -->
+            <div id="search-tab" class="tab-content active">
+                <h2>🔎 Search Files</h2>
+                <div class="form-group">
+                    <label for="searchTerm">Search Term</label>
+                    <input type="text" id="searchTerm" placeholder="e.g., fc, report, sales">
+                </div>
+                <button class="btn" onclick="searchFiles()">Search Files</button>
+                <div id="searchResults" class="results"></div>
+            </div>
+
+            <!-- Analyze Files Tab -->
+            <div id="analyze-tab" class="tab-content">
+                <h2>📊 Analyze Files</h2>
+                <p style="color: #666; margin-bottom: 20px;">
+                    First search for files, then select files to analyze.
+                </p>
+                
+                <div class="form-group">
+                    <label>Selected Files</label>
+                    <div id="selectedFiles" class="selected-files">
+                        <span style="color: #999;">No files selected. Search and click files to select.</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="analyzeQuery">Your Question</label>
+                    <textarea id="analyzeQuery" placeholder="e.g., What is the total revenue? Compare the sales data. Summarize this report."></textarea>
+                </div>
+                <button class="btn" onclick="analyzeFiles()">Ask Ark</button>
+                <div id="analyzeResults" class="results"></div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Analyzing with AI...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const API_BASE = 'http://localhost:3000/api/fileanalysis';
+    let selectedFiles = [];
+    let searchedFiles = [];
+
+    // Tab Switching
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        
+        event.target.classList.add('active');
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+
+    // Show/Hide Loading
+    function showLoading() {
+        document.getElementById('loading').classList.add('show');
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').classList.remove('show');
+    }
+
+    // Clear Results
+    function clearResults(containerId) {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = '';
+        }
+    }
+
+    // Get file icon based on extension
+    function getFileIcon(extension) {
+        const icons = {
+            '.xlsx': '📊',
+            '.xls': '📊',
+            '.csv': '📋',
+            '.json': '📄',
+            '.txt': '📝',
+            '.pdf': '📕'
+        };
+        return icons[extension] || '📄';
+    }
+
+    // Search Files
+    async function searchFiles() {
+        const searchTerm = document.getElementById('searchTerm').value;
+
+        if (!searchTerm.trim()) {
+            showError('searchResults', 'Please enter a search term');
+            return;
+        }
+
+        // Clear old results and show loading
+        clearResults('searchResults');
+        showLoading();
+
+        try {
+            const response = await fetch(`${API_BASE}/search`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ searchTerm })
+            });
+
+            const data = await response.json();
+            hideLoading();
+
+            if (data.status === 'success') {
+                searchedFiles = data.data || [];
+                displaySearchResults(searchedFiles);
+            } else {
+                showError('searchResults', data.message);
+            }
+        } catch (error) {
+            hideLoading();
+            showError('searchResults', 'Error connecting to server: ' + error.message);
+        }
+    }
+
+    // Display Search Results
+    function displaySearchResults(files) {
+        const container = document.getElementById('searchResults');
+
+        if (!files || files.length === 0) {
+            container.innerHTML = `
+                <div class="result-card">
+                    <p style="color: #666; text-align: center;">No files found matching your search.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="result-card">
+                <h3>Found ${files.length} file(s)</h3>
+                <p style="color: #666; margin-bottom: 15px;">Click on files to select them for analysis</p>
+                <ul class="file-list">
+                    ${files.map((file, index) => `
+                        <li class="file-item ${isFileSelected(file) ? 'selected' : ''}" 
+                            onclick="toggleFileSelection(${index})">
+                            <div class="file-info">
+                                <span class="file-icon">${getFileIcon(file.extension)}</span>
+                                <div>
+                                    <div class="file-name">${file.filename}</div>
+                                    <div class="file-meta">${file.sizeFormatted} • ${new Date(file.modifiedDate).toLocaleDateString()}</div>
+                                </div>
+                            </div>
+                            <span>${isFileSelected(file) ? '✓' : '+'}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    // File Selection
+    function isFileSelected(file) {
+        return selectedFiles.some(f => f.filepath === file.filepath);
+    }
+
+    function toggleFileSelection(index) {
+        const file = searchedFiles[index];
+        if (!file) return;
+
+        const existingIndex = selectedFiles.findIndex(f => f.filepath === file.filepath);
+        
+        if (existingIndex > -1) {
+            selectedFiles.splice(existingIndex, 1);
+        } else {
+            selectedFiles.push(file);
+        }
+
+        displaySearchResults(searchedFiles);
+        updateSelectedFilesDisplay();
+    }
+
+    function updateSelectedFilesDisplay() {
+        const container = document.getElementById('selectedFiles');
+        
+        if (selectedFiles.length === 0) {
+            container.innerHTML = '<span style="color: #999;">No files selected. Search and click files to select.</span>';
+            return;
+        }
+
+        container.innerHTML = selectedFiles.map((file, index) => `
+            <div class="selected-file-tag">
+                ${getFileIcon(file.extension)} ${file.filename}
+                <button onclick="removeFile(${index})">&times;</button>
+            </div>
+        `).join('');
+    }
+
+    function removeFile(index) {
+        selectedFiles.splice(index, 1);
+        updateSelectedFilesDisplay();
+        displaySearchResults(searchedFiles);
+    }
+
+    // Analyze Files
+    async function analyzeFiles() {
+        const query = document.getElementById('analyzeQuery').value;
+
+        if (selectedFiles.length === 0) {
+            showError('analyzeResults', 'Please select at least one file to analyze');
+            return;
+        }
+
+        if (!query.trim()) {
+            showError('analyzeResults', 'Please enter a question');
+            return;
+        }
+
+        // Clear old results and show loading
+        clearResults('analyzeResults');
+        showLoading();
+
+        try {
+            const response = await fetch(`${API_BASE}/analyze-files`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    files: selectedFiles.map(f => ({ filepath: f.filepath, filename: f.filename })),
+                    query
+                })
+            });
+
+            const data = await response.json();
+            hideLoading();
+
+            if (data.status === 'success') {
+                displayAnalysisResults(data);
+            } else {
+                showError('analyzeResults', data.message);
+            }
+        } catch (error) {
+            hideLoading();
+            showError('analyzeResults', 'Error connecting to server: ' + error.message);
+        }
+    }
+
+    // Display Analysis Results
+    function displayAnalysisResults(data) {
+        const container = document.getElementById('analyzeResults');
+        const result = data.data;
+
+        container.innerHTML = `
+            <div class="success">✓ ${data.message}</div>
+            <div class="ai-response">
+                <h4>🤖 AI Analysis</h4>
+                <div class="ai-response-content">${formatMarkdown(result.aiResponse)}</div>
+                <div class="model-info">
+                    <strong>Analysis Type:</strong> ${result.analysisType || 'Single file'} • 
+                    <strong>Files:</strong> ${result.filesAnalyzed?.map(f => f.filename).join(', ') || 'N/A'} • 
+                    <strong>Model:</strong> ${result.model}
+                </div>
+            </div>
+        `;
+    }
+
+    // Format Markdown with TABLE support
+    function formatMarkdown(text) {
+        if (!text) return '';
+        
+        let result = text;
+        
+        // Convert markdown tables to HTML tables
+        result = convertMarkdownTables(result);
+        
+        const tableMatches = [];
+        let tableIndex = 0;
+        
+        // Temporarily replace tables with placeholders
+        result = result.replace(/<table[\s\S]*?<\/table>/gi, (match) => {
+            tableMatches.push(match);
+            return `__TABLE_PLACEHOLDER_${tableIndex++}__`;
+        });
+        
+        // Escape remaining HTML
+        result = escapeHtml(result);
+        
+        // Restore tables
+        tableMatches.forEach((table, index) => {
+            result = result.replace(`__TABLE_PLACEHOLDER_${index}__`, `<div class="table-wrapper">${table}</div>`);
+        });
+        
+        // Format other markdown elements
+        result = result.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+        result = result.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+        result = result.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+        result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        result = result.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        result = result.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+        result = result.replace(/`(.*?)`/g, '<code>$1</code>');
+        
+        // Convert line breaks
+        result = result.replace(/\n/g, '<br>');
+        
+        // Clean up extra breaks around block elements
+        result = result.replace(/<br>\s*<(table|h1|h2|h3|pre|div)/gi, '<$1');
+        result = result.replace(/<\/(table|h1|h2|h3|pre|div)>\s*<br>/gi, '</$1>');
+        
+        return result;
+    }
+
+    // Convert Markdown tables to HTML tables
+    function convertMarkdownTables(text) {
+        const lines = text.split('\n');
+        let result = [];
+        let inTable = false;
+        let tableRows = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            
+            if (line.startsWith('|') && line.endsWith('|')) {
+                const isSeparator = /^\|[\s\-:|]+\|$/.test(line);
+                
+                if (!inTable) {
+                    inTable = true;
+                    tableRows = [];
+                }
+                
+                if (!isSeparator) {
+                    const cells = line
+                        .slice(1, -1)
+                        .split('|')
+                        .map(cell => cell.trim());
+                    tableRows.push(cells);
+                }
+            } else {
+                if (inTable) {
+                    result.push(convertTableRowsToHTML(tableRows));
+                    inTable = false;
+                    tableRows = [];
+                }
+                result.push(line);
+            }
+        }
+        
+        if (inTable && tableRows.length > 0) {
+            result.push(convertTableRowsToHTML(tableRows));
+        }
+        
+        return result.join('\n');
+    }
+
+    // Convert table rows array to HTML table
+    function convertTableRowsToHTML(rows) {
+        if (rows.length === 0) return '';
+        
+        let html = '<table>';
+        
+        rows.forEach((row, rowIndex) => {
+            html += '<tr>';
+            row.forEach((cell) => {
+                if (rowIndex === 0) {
+                    html += `<th>${escapeHtml(cell)}</th>`;
+                } else {
+                    html += `<td>${escapeHtml(cell)}</td>`;
+                }
+            });
+            html += '</tr>';
+        });
+        
+        html += '</table>';
+        return html;
+    }
+
+    // Show Error
+    function showError(containerId, message) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = `<div class="error">❌ ${message}</div>`;
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    </script>
+</body>
+</html>
